@@ -100,8 +100,8 @@ public class GameGUI extends JComponent
 
     // set default config
     totalWalls = 20;
-    totalPrizes = 3;
-    totalTraps = 5;
+    totalPrizes = 6; // increased starting prizes
+    totalTraps = 10; // increased starting traps
   }
 
  /**
@@ -183,11 +183,23 @@ public class GameGUI extends JComponent
         }     
       }
 
+      // check if destination has an active trap; stepping on it is a penalty
+      boolean stepOnTrap = false;
+      for (Rectangle t : traps)
+      {
+        if (t.getWidth() > 0 && t.contains(newX, newY))
+        {
+          stepOnTrap = true;
+          System.out.println("YOU STEPPED ON A TRAP!");
+          break;
+        }
+      }
+
       // all is well, move player
       x += incrx;
       y += incry;
       repaint();   
-      return 0;   
+      return stepOnTrap ? -trapVal : 0;   
   }
 
   /**
@@ -250,6 +262,12 @@ public class GameGUI extends JComponent
         {
           r.setSize(0,0);
           System.out.println("TRAP IS SPRUNG!");
+          // if all traps are sprung, respawn new ones
+          if (allDepleted(traps))
+          {
+            createTraps();
+            repaint();
+          }
           return trapVal;
         }
       }
@@ -277,6 +295,11 @@ public class GameGUI extends JComponent
       {
         System.out.println("YOU PICKED UP A PRIZE!");
         p.setSize(0,0);
+        // if all prizes are picked up, respawn new ones
+        if (allDepleted(prizes))
+        {
+          createPrizes();
+        }
         repaint();
         return prizeVal;
       }
@@ -329,6 +352,16 @@ public class GameGUI extends JComponent
   public void setWalls(int w) 
   {
     totalWalls = w;
+  }
+
+  /**
+   * Get the current number of traps in the game.
+   * <P>
+   * @return the number of traps
+   */
+  public int getTotalTraps()
+  {
+    return totalTraps;
   }
 
   /**
@@ -502,5 +535,27 @@ public class GameGUI extends JComponent
     }
     return score;
   
+  }
+
+  /**
+   * Close the game window without applying any scoring logic.
+   */
+  public void close()
+  {
+    setVisible(false);
+    frame.dispose();
+  }
+
+  /** Determine if every Rectangle in the array has been depleted (size == 0). */
+  private boolean allDepleted(Rectangle[] rects)
+  {
+    for (Rectangle r : rects)
+    {
+      if (r.getWidth() > 0 || r.getHeight() > 0)
+      {
+        return false;
+      }
+    }
+    return true;
   }
 }
