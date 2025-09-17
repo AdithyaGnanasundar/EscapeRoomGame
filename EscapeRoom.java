@@ -59,21 +59,182 @@ public class EscapeRoom
     Scanner in = new Scanner(System.in);
     String[] validCommands = { "right", "left", "up", "down", "r", "l", "u", "d",
     "jump", "jr", "jumpleft", "jl", "jumpup", "ju", "jumpdown", "jd",
-    "pickup", "p", "quit", "q", "replay", "help", "?"};
+    "pickup", "p", "quit", "q", "replay", "help", "?", "addtrap", "detrap", "trapvictim"};
   
     // set up game
     boolean play = true;
+    boolean won = false;
     while (play)
     {
       /* TODO: get all the commands working */
 	  /* Your code here */
-    
+      System.out.print("> ");
+      String cmd = in.nextLine().trim().toLowerCase();
+
+      // map single-letter aliases to full words for consistency
+      if (cmd.equals("r")) cmd = "right";
+      if (cmd.equals("l")) cmd = "left";
+      if (cmd.equals("u")) cmd = "up";
+      if (cmd.equals("d")) cmd = "down";
+      if (cmd.equals("p")) cmd = "pickup";
+      if (cmd.equals("q")) cmd = "quit";
+
+      int deltaX = 0;
+      int deltaY = 0;
+      boolean handled = true;
+
+      switch (cmd)
+      {
+        case "right":
+          deltaX = m; deltaY = 0;
+          score += game.movePlayer(deltaX, deltaY);
+          break;
+        case "left":
+          deltaX = -m; deltaY = 0;
+          score += game.movePlayer(deltaX, deltaY);
+          break;
+        case "up":
+          deltaX = 0; deltaY = -m;
+          score += game.movePlayer(deltaX, deltaY);
+          break;
+        case "down":
+          deltaX = 0; deltaY = m;
+          score += game.movePlayer(deltaX, deltaY);
+          break;
+
+        // jump variants (two spaces); cannot jump through walls per GameGUI checks
+        case "jr":
+        case "jumpright":
+          score += game.movePlayer(2*m, 0);
+          break;
+        case "jl":
+        case "jumpleft":
+          score += game.movePlayer(-2*m, 0);
+          break;
+        case "ju":
+        case "jumpup":
+          score += game.movePlayer(0, -2*m);
+          break;
+        case "jd":
+        case "jumpdown":
+          score += game.movePlayer(0, 2*m);
+          break;
+        case "jump":
+          System.out.print("Jump which direction (r/l/u/d)? > ");
+          String jdir = in.nextLine().trim().toLowerCase();
+          if (jdir.equals("r")) score += game.movePlayer(2*m, 0);
+          else if (jdir.equals("l")) score += game.movePlayer(-2*m, 0);
+          else if (jdir.equals("u")) score += game.movePlayer(0, -2*m);
+          else if (jdir.equals("d")) score += game.movePlayer(0, 2*m);
+          else { System.out.println("Invalid jump direction"); score -= 1; }
+          break;
+
+        // spring trap ahead of player in a direction
+        case "sr":
+        case "springright":
+          if (game.isTrap(m, 0)) { score += game.springTrap(m, 0); }
+          else { score += game.springTrap(m, 0); }
+          break;
+        case "sl":
+        case "springleft":
+          if (game.isTrap(-m, 0)) { score += game.springTrap(-m, 0); }
+          else { score += game.springTrap(-m, 0); }
+          break;
+        case "su":
+        case "springup":
+          if (game.isTrap(0, -m)) { score += game.springTrap(0, -m); }
+          else { score += game.springTrap(0, -m); }
+          break;
+        case "sd":
+        case "springdown":
+          if (game.isTrap(0, m)) { score += game.springTrap(0, m); }
+          else { score += game.springTrap(0, m); }
+          break;
+        case "spring":
+          System.out.print("Spring trap which direction (r/l/u/d)? > ");
+          String sdir = in.nextLine().trim().toLowerCase();
+          if (sdir.equals("r")) score += game.springTrap(m, 0);
+          else if (sdir.equals("l")) score += game.springTrap(-m, 0);
+          else if (sdir.equals("u")) score += game.springTrap(0, -m);
+          else if (sdir.equals("d")) score += game.springTrap(0, m);
+          else { System.out.println("Invalid spring direction"); score -= 1; }
+          break;
+
+        case "pickup":
+          score += game.pickupPrize();
+          break;
+
+        case "help":
+        case "?":
+          System.out.println("Commands: right(r), left(l), up(u), down(d)");
+          System.out.println("          jump jr/jl/ju/jd or 'jump' then direction");
+          System.out.println("          spring sr/sl/su/sd or 'spring' then direction");
+          System.out.println("          pickup(p), replay, help(?)");
+          System.out.println("          addtrap, detrap, trapvictim");
+          System.out.println("          quit(q)");
+          break;
+
+        case "replay":
+          System.out.println("steps=" + game.getSteps());
+          score += game.replay();
+          break;
+
+        case "quit":
+          play = false;
+          break;
+
+        case "addtrap":
+          System.out.println("Added a new trap to the board!");
+          game.setTraps(game.getTotalTraps() + 1);
+          game.createBoard();
+          score += 5; // bonus for adding trap
+          break;
+
+        case "detrap":
+          System.out.println("Removed a trap from the board!");
+          if (game.getTotalTraps() > 0) {
+            game.setTraps(game.getTotalTraps() - 1);
+            game.createBoard();
+            score += 3; // bonus for removing trap
+          } else {
+            System.out.println("No traps to remove!");
+            score -= 2; // penalty for trying to remove non-existent trap
+          }
+          break;
+
+        case "trapvictim":
+          System.out.println("You've become a victim of your own trap!");
+          score -= 10; // penalty for being trapped
+          break;
+
+        default:
+          handled = false;
+          break;
+      }
+
+      if (!handled)
+      {
+        System.out.println("Invalid command. Type 'help' for options.");
+        score -= 1; // penalty for invalid command
+      }
+
+      System.out.println("score=" + score);
+      // win condition: score > 50
+      if (score > 50)
+      {
+        System.out.println("YOU WIN! Score exceeded 50.");
+        game.close();
+        won = true;
+        play = false;
+      }
       
     }
 
   
-
-    score += game.endGame();
+    if (!won)
+    {
+      score += game.endGame();
+    }
 
     System.out.println("score=" + score);
     System.out.println("steps=" + game.getSteps());
