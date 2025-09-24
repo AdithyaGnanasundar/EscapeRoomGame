@@ -55,6 +55,8 @@ public class EscapeRoom
     int py = 0; 
     
     int score = 0;
+    // 30-second round timer (resets on replay)
+    long roundEndTimeMs = System.currentTimeMillis() + 30_000L;
 
     Scanner in = new Scanner(System.in);
     String[] validCommands = { "right", "left", "up", "down", "r", "l", "u", "d",
@@ -68,6 +70,20 @@ public class EscapeRoom
     {
       /* TODO: get all the commands working */
 	  /* Your code here */
+      // show remaining time this turn
+      long remainingMs = roundEndTimeMs - System.currentTimeMillis();
+      if (remainingMs <= 0)
+      {
+        System.out.println("Time's up! Restarting the board. Type 'quit' to exit.");
+        score += game.replay();
+        // reset 30-second timer for the new round
+        roundEndTimeMs = System.currentTimeMillis() + 30_000L;
+        // update HUD immediately after replay
+        game.setHud(score, 30L);
+        continue;
+      }
+      System.out.println("timeleft=" + (remainingMs / 1000) + "s");
+      game.setHud(score, remainingMs / 1000);
       System.out.print("> ");
       String cmd = in.nextLine().trim().toLowerCase();
 
@@ -187,7 +203,11 @@ public class EscapeRoom
           System.out.println("Added a new trap to the board!");
           game.setTraps(game.getTotalTraps() + 1);
           game.createBoard();
-          score += 5; // bonus for adding trap
+          for (int i=0; i<game.getTotalTraps(); i++) {
+            if (game.isTrap(0, 0)) {
+              score++; // bonus for adding trap
+            }
+          }
           break;
 
         case "detrap":
@@ -219,10 +239,12 @@ public class EscapeRoom
       }
 
       System.out.println("score=" + score);
-      // win condition: score > 50
-      if (score > 50)
+      // refresh HUD after processing command
+      game.setHud(score, Math.max(0L, (roundEndTimeMs - System.currentTimeMillis()) / 1000));
+      // win condition: compound boolean requires score threshold and at least one step
+      if (score >= 30 && game.getSteps() > 0)
       {
-        System.out.println("YOU WIN! Score exceeded 50.");
+        System.out.println("YOU WIN! Score reached 30.");
         game.close();
         won = true;
         play = false;
