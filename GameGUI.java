@@ -1,17 +1,14 @@
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.Image;
 import java.awt.Point;
-
+import java.awt.Rectangle;
+import java.io.File;
+import java.util.Random;
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
-
-import java.io.File;
-import javax.imageio.ImageIO;
-
-import java.util.Random;
 
 /**
  * A Game board on which to place and move players.
@@ -61,6 +58,10 @@ public class GameGUI extends JComponent
 
   // game frame
   private JFrame frame;
+
+  // HUD state (score and countdown seconds)
+  private int hudScore = 0;
+  private long hudSecondsLeft = 30L;
 
   /**
    * Constructor for the GameGUI class.
@@ -444,6 +445,12 @@ public class GameGUI extends JComponent
     // draw player, saving its location
     g.drawImage(player, x, y, 40,40, null);
     playerLoc.setLocation(x,y);
+
+    // draw HUD (score and timer) on top-left corner
+    g2.setPaint(Color.WHITE);
+    g2.fillRect(8, 8, 170, 24);
+    g2.setPaint(Color.BLACK);
+    g2.drawString("Score: " + hudScore + "   Time: " + hudSecondsLeft + "s", 14, 25);
   }
 
   /*------------------- private methods -------------------*/
@@ -544,6 +551,14 @@ public class GameGUI extends JComponent
   {
     setVisible(false);
     frame.dispose();
+  }
+
+  /** Update HUD values for score and remaining time in seconds. */
+  public void setHud(int score, long secondsLeft)
+  {
+    this.hudScore = score;
+    this.hudSecondsLeft = Math.max(0L, secondsLeft);
+    repaint();
   }
 
   /** Determine if every Rectangle in the array has been depleted (size == 0). */
